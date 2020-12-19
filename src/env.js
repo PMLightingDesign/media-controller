@@ -85,6 +85,7 @@ function validateWhereResults(whereResult){
   if(isUnixLike()){
     whereResult.output.forEach((item, i) => {
       if(item != null) {
+        item = item.toString();
         parts = item.split(' ');
       }
     });
