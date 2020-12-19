@@ -83,10 +83,12 @@ function validateWhereResults(whereResult){
 
   // The where and whereis commands report back the results slightly differently
   if(isUnixLike()){
-    whereResult.output.forEach((item, i) => {
-      if(item != null) {
-        item = item.toString();
-        parts = item.split(' ');
+    whereResult.output.forEach((line, i) => {
+      if(line != null) {
+        line = line.toString();
+        line.forEach((part) => {
+          if(part.length > 1){ parts.push(part); }
+        });
       }
     });
   } else {
