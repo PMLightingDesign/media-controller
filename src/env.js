@@ -83,9 +83,11 @@ function validateWhereResults(whereResult){
 
   // The where and whereis commands report back the results slightly differently
   if(isUnixLike()){
-    let line = whereResult.output[0].toString();
-    parts = line.split(' ');
-    if(parts.length == 1) { return result; } // We know the search didn't turn up any results
+    whereResult.output.forEach((item, i) => {
+      if(item != null) {
+        parts = line.split(' ');
+      }
+    });
   } else {
     parts = new Array();
     whereResult.output.forEach((item, i) => {
