@@ -1,9 +1,8 @@
 const MPVController = require('./src/mpv.js');
-const udp = require('dgram').createSocket('udp4');
-
-let PORT = 6969;
 
 let options = undefined;
+let restartFlag = false;
+
 if(process.argv.length > 2){
   // We have an options file to load
   options = {
@@ -31,7 +30,17 @@ mpv.on('response', (response) => {
 
 mpv.on('close', (reason) => {
   console.log(`Player closed: ${reason}`);
+  if(restartFlag){
+    mpv.start();
+    restartFlag = false;
+  }
 });
+
+
+const udp = require('dgram').createSocket('udp4');
+
+let PORT = 6969;
+let clients =
 
 PORT += INSTANCE_ID + 1;
 
@@ -40,3 +49,23 @@ udp.bind(PORT);
 udp.on('listening', () => {
   console.log(`Remote UDP port open on: ${PORT}`);
 });
+
+udp.on('message', (data) => {
+  if(data.toString() == 'REGISTER'){
+
+  } else if(data.toString() == 'RESTART_PLAYER'){
+    restartMediaPlayer();
+  } else if(data.toString().includes('RESTART_PLAYER_ARGS')){
+    let args = data.toString().split(',');
+    args.shift();
+    mpv.args = args;
+    restartMediaPlayer();
+  } else {
+    mpv.ipc(JSON.parse(data));
+  }
+});
+
+function restartMediaPlayer(){
+  restartFlag = true;
+  mpv.end();
+}

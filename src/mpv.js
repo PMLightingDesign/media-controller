@@ -76,6 +76,8 @@ class MPVController extends EventEmitter {
 
       this.cp = spawn(this.binary.path, this.args);
 
+      this.status = 'STARTED';
+
       if(typeof(this.socket) == 'undefined'){
         this.createIPCSocket();
       }
@@ -103,7 +105,12 @@ class MPVController extends EventEmitter {
   }
 
   end(){
-    this.cp.kill('SIGHUP');
+    if(this.isUnixLike){
+      this.cp.kill('SIGHUP');
+    } else {
+      this.cp.kill('SIGINT');
+    }
+
     this.close("PARENT_TERMINATED");
   }
 
@@ -134,20 +141,18 @@ class MPVController extends EventEmitter {
     try {
       data = data.toString().split('\n');
       data.forEach((json) => {
-        this.lastJSON = JSON.parse(json.replace('\n', '').replace('\r', ''));
-        if(typeof(this.lastJSON.event) != 'undefined'){
-          this.cacheResponse(this.lastJSON.event);
+        if(json.length > 0){
+          this.lastJSON = JSON.parse(json.replace('\n', '').replace('\r', ''));
+          this.cacheResponse(this.lastJSON);
         }
       });
     } catch (e) {
       console.log(e);
-      console.log(data);
-      console.log(`Invalid IPC-JSON: ${data.toString()}`);
     }
   }
 
   cacheResponse(response){
-    this.emit('repsonse', response);
+    this.emit('response', response);
     if(this.responseCache.length >= this.responseCacheDepth){
       this.responseCache.shift();
     }
