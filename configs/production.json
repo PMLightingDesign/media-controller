@@ -1,0 +1,7 @@
+{
+  "args": ["--no-osc", "--fs", "--screen=0", "--title=RELMediaPlayer", "--idle=yes", "--force-window=yes", "--keep-open=yes"],
+  "exclusive": true,
+  "controllerOptions": {
+    "responseCacheDepth": 1024
+  }
+}

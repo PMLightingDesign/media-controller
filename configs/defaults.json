@@ -1,0 +1,7 @@
+{
+  "args": ["--idle=yes", "--force-window=yes", "--keep-open=yes"],
+  "exclusive": true,
+  "controllerOptions": {
+    "responseCacheDepth": 256
+  }
+}
