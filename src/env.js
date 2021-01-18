@@ -2,8 +2,31 @@ const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const constants = require('./constants.js');
+const os = require('os');
 
 // (Get-Process mpv).Id
+
+/**
+  * This function will return all non-loopback ipv4 interfaces
+  * @param {boolean} DEBUG - Logs to console the names of all interfaces being checked
+  * @returns {Array} result - A list of valid interfaces
+**/
+
+function getNetworkInterfaces(DEBUG){
+  let ips = new Array();
+  let interfaces = os.networkInterfaces();
+  for(const [key, value] of Object.entries(interfaces)){
+    if(DEBUG){ console.log(`Checking adapter: ${key}`); }
+    value.forEach((ip) => {
+      if(ip.family == 'IPv4' && ip.address != '127.0.0.1'){
+        ips.push(ip);
+      }
+    });
+  }
+  return ips;
+}
+
+module.exports.getNetworkInterfaces = getNetworkInterfaces;
 
 /** @module env */
 
@@ -64,7 +87,7 @@ function getPIDs(appName){
   * @returns {boolean} isUnixLike
 **/
 function isUnixLike(){
-  return !( require('os').platform().indexOf('win') > -1 );
+  return !( os.platform().indexOf('win') > -1 );
 }
 /**
   * Exports: isUnixLike

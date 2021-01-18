@@ -1,5 +1,7 @@
 const MPVController = require('./src/mpv.js');
 const udp = require('dgram').createSocket('udp4');
+const discovery = require('dgram').createSocket('udp4');
+const { getNetworkInterfaces } = require('./src/env.js');
 
 let options = undefined;
 let restartFlag = false;
@@ -23,11 +25,7 @@ let INSTANCE_ID = mpv.start();
 
 mpv.on('response', (response) => {
   console.log(response);
-  clients.forEach((client) => {
-    udp.send(JSON.stringify(response), client.port, client.address, (err) => {
-      if(err) { console.log(err); }
-    });
-  });
+  broadcast(response);
 });
 
 mpv.on('close', (reason) => {
@@ -57,6 +55,8 @@ udp.on('message', (data, rinfo) => {
     args.shift();
     mpv.args = args;
     restartMediaPlayer();
+  } else if(data.toString() == 'PING'){
+    udp.send("PONG", rinfo.port, rinfo.address, (err) => { if (err) { console.log(err); } });
   } else {
     mpv.ipc(JSON.parse(data));
   }
@@ -82,6 +82,33 @@ function registerSender(rinfo){
   }
 }
 
-function broadcast(){
-
+function broadcast(response){
+  clients.forEach((client) => {
+    udp.send(JSON.stringify(response), client.port, client.address, (err) => {
+      if(err) { console.log(err); }
+    });
+  });
 }
+
+discovery.bind(6969);
+
+discovery.on('listening', () => {
+  console.log(`Discovery active on 6969`);
+});
+
+discovery.on('message', (data, rinfo) => {
+  let msg = data.toString();
+  if(msg == "DISCOVER"){
+    console.log(`Sending player info to ${rinfo.address}`);
+    discovery.send(
+      JSON.stringify({
+        discovery: true,
+        interfaces: getNetworkInterfaces(),
+        port: PORT,
+        instance: INSTANCE_ID
+      }), rinfo.port, rinfo.address, (err) => {
+        if(err) { console.log(err); }
+      }
+    );
+  }
+});
