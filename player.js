@@ -46,19 +46,20 @@ udp.on('listening', () => {
 });
 
 udp.on('message', (data, rinfo) => {
-  if(data.toString() == 'REGISTER'){
-    registerSender(rinfo);
-  } else if(data.toString() == 'RESTART_PLAYER'){
-    restartMediaPlayer();
-  } else if(data.toString().includes('RESTART_PLAYER_ARGS')){
-    let args = data.toString().split(',');
-    args.shift();
-    mpv.args = args;
-    restartMediaPlayer();
-  } else if(data.toString() == 'PING'){
-    udp.send("PONG", rinfo.port, rinfo.address, (err) => { if (err) { console.log(err); } });
+  data = JSON.parse(data);
+  if(data.playerDirective){
+    if(data.directive == 'REGISTER'){
+      registerSender(rinfo);
+    } else if(data.directive == 'RESTART_PLAYER'){
+      restartMediaPlayer();
+    } else if(data.directive == 'RESTART_PLAYER_ARGS'){
+      mpv.args = data.args;
+      restartMediaPlayer();
+    } else if(data.directive == 'PING'){
+      sendVitals(udp, rinfo);
+    }
   } else {
-    mpv.ipc(JSON.parse(data));
+    mpv.ipc(data);
   }
 });
 
@@ -100,15 +101,19 @@ discovery.on('message', (data, rinfo) => {
   let msg = data.toString();
   if(msg == "DISCOVER"){
     console.log(`Sending player info to ${rinfo.address}`);
-    discovery.send(
-      JSON.stringify({
-        discovery: true,
-        interfaces: getNetworkInterfaces(),
-        port: PORT,
-        instance: INSTANCE_ID
-      }), rinfo.port, rinfo.address, (err) => {
-        if(err) { console.log(err); }
-      }
-    );
+    sendVitals(discovery, rinfo);
   }
 });
+
+function sendVitals(sender, rinfo){
+  discovery.send(
+    JSON.stringify({
+      discovery: true,
+      interfaces: getNetworkInterfaces(),
+      port: PORT,
+      instance: INSTANCE_ID
+    }), rinfo.port, rinfo.address, (err) => {
+      if(err) { console.log(err); }
+    }
+  );
+}
