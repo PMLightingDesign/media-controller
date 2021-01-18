@@ -59,7 +59,7 @@ function getPIDs(appName){
   let result = new Array();
   let bufs;
   if(isUnixLike()){
-    bufs = getNonNullBuffers(spawnSync(pgrep, ['mpv']));
+    bufs = getNonNullBuffers(spawnSync("pgrep", ['mpv']));
     if(bufs.length == 0) { return result } else {
       let pids = bufs[0].split('\r');
     }
