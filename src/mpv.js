@@ -160,7 +160,57 @@ class MPVController extends EventEmitter {
   }
 
   parseStdOut(data){
-    this.emit('data', data.toString());
+    let dataResponse = {
+      stdout: undefined
+    }
+
+    // Slice off leading zeros or returns
+    if(data[0] == 0x20 || data[0] == 0x0d){
+      data = data.slice(1, data.length);
+    }
+    // Slice off tailing zeros or returns
+    if(data[data.length-1] == 0x20 || data[data.length-1] == 0x0d){
+      data = data.slice(0, data.length-1);
+    }
+    // Slice off leading zeros or returns
+    if(data[0] == 0x1b){
+      data = data.slice(1, data.length);
+    }
+
+    data = data.toString();
+    if(data.substr(0,2) == '[K'){ data = data.substr(2, data.length) }
+    if(data[0] == 'A' || data[0] == 'V'){
+      if(!data.includes('AO:') && !data.includes('VO:')){
+        // This is playback progress'
+        this.parsePlaybackProgress(data);
+      } else {
+        dataResponse.stdout = data;
+      }
+    } else if(data[0] == '('){
+      let closeBracketIndex = -1;
+      for(let i = 0; i < data.lenth; i++){
+        if(data[i] == ')'){ closeBracketIndex = i; }
+      }
+      if(closeBracketIndex > 0){
+        let innerWord = data.slice(1, closeBracketIndex).toString();
+        if(innerWord == "Paused"){
+          this.parsePlaybackProgress(data.slice(closeBracketIndex+2, data.length));
+        } else {
+          dataResponse.stdout = data;
+        }
+      } else {
+        dataResponse.stdout = data;
+      }
+    } else if (data[0] == '['){
+      dataResponse.stdout = data;
+    }
+    if(typeof(dataResponse.stdout) != 'undefined'){
+      this.cacheResponse(dataResponse);
+    }
+  }
+
+  parsePlaybackProgress(progress){
+    console.log("progress:" + progress);
   }
 
   close(reason){

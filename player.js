@@ -1,4 +1,5 @@
 const MPVController = require('./src/mpv.js');
+const udp = require('dgram').createSocket('udp4');
 
 let options = undefined;
 let restartFlag = false;
@@ -20,12 +21,13 @@ let mpv = new MPVController(options);
 console.log(mpv);
 let INSTANCE_ID = mpv.start();
 
-mpv.on('data', (data) => {
-  console.log(data);
-});
-
 mpv.on('response', (response) => {
   console.log(response);
+  clients.forEach((client) => {
+    udp.send(JSON.stringify(response), client.port, client.address, (err) => {
+      if(err) { console.log(err); }
+    });
+  });
 });
 
 mpv.on('close', (reason) => {
@@ -36,13 +38,8 @@ mpv.on('close', (reason) => {
   }
 });
 
-
-const udp = require('dgram').createSocket('udp4');
-
-let PORT = 6969;
-let clients =
-
-PORT += INSTANCE_ID + 1;
+let PORT = 6969 + INSTANCE_ID + 1;
+let clients = new Array();
 
 udp.bind(PORT);
 
@@ -50,9 +47,9 @@ udp.on('listening', () => {
   console.log(`Remote UDP port open on: ${PORT}`);
 });
 
-udp.on('message', (data) => {
+udp.on('message', (data, rinfo) => {
   if(data.toString() == 'REGISTER'){
-
+    registerSender(rinfo);
   } else if(data.toString() == 'RESTART_PLAYER'){
     restartMediaPlayer();
   } else if(data.toString().includes('RESTART_PLAYER_ARGS')){
@@ -68,4 +65,23 @@ udp.on('message', (data) => {
 function restartMediaPlayer(){
   restartFlag = true;
   mpv.end();
+}
+
+function registerSender(rinfo){
+  clients.forEach((client) => {
+    if(client.ip == rinfo.ip && client.port == rinfo.port){
+      // Do Nothing
+    } else {
+      clients.push(rinfo);
+      console.log("Clients");
+    }
+  });
+  if(clients.length == 0){
+    clients.push(rinfo);
+    console.log(clients);
+  }
+}
+
+function broadcast(){
+
 }
